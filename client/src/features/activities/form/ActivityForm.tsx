@@ -30,7 +30,7 @@ export default function ActivityForm() {
         formData.forEach((value, key) => {
             data[key] = value;
         });
-
+        scrollToTop();
         try {
             if (activity) {
                 data.id = activity.id;
@@ -49,7 +49,7 @@ export default function ActivityForm() {
             }
 
 
-            scrollToTop();
+
         } catch (error) {
             toast.error("Something went wrong. Please try again.");
             console.error(error);
@@ -81,7 +81,7 @@ export default function ActivityForm() {
                 <TextField name="venue" label="Venue" defaultValue={activity?.venue} required />
 
                 <Box display="flex" gap={2}>
-                    <CommonButton label="Cancel" type="cancel" onClick={() => { }} />
+                    <CommonButton label="Cancel" type="cancel" onClick={() => navigate('/activities')} />
                     <CommonButton
                         label="Submit"
                         type="submit"

@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import agent from "../api/agent";
+import { useLocation } from "react-router";
 
 export const useActivities = (id?: string) => {
     const queryClient = useQueryClient();
+    const location = useLocation();
     const compare = (a: Activity, b: Activity) => {
         if (a.id < b.id) {
             return -1;
@@ -18,7 +20,8 @@ export const useActivities = (id?: string) => {
         queryFn: async () => {
             const response = await agent.get<Activity[]>('/activities');
             return response.data.sort(compare);
-        }
+        },
+        enabled: !id && location.pathname === '/activities'
     });
     const { data: activity, isLoading: isLoadingActivity } = useQuery({
         queryKey: ['activities', id],

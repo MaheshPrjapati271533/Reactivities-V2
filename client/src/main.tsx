@@ -6,12 +6,13 @@ import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 
-
+import 'react-toastify/ReactToastify.css'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { RouterProvider } from 'react-router';
 import { router } from './app/Router/Routes';
 import { store, StoreContext } from './lib/stores/Store';
+import { ToastContainer } from 'react-toastify';
 
 // Create a client
 const queryClient = new QueryClient()
@@ -22,6 +23,7 @@ createRoot(document.getElementById('root')!).render(
       <QueryClientProvider client={queryClient}>
         <ReactQueryDevtools />
         <RouterProvider router={router} />
+        <ToastContainer position='bottom-right' hideProgressBar theme='colored' />
       </QueryClientProvider>
     </StoreContext.Provider>
   </StrictMode>,

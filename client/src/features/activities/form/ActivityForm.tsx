@@ -1,17 +1,42 @@
-import { Box, Paper, TextField, Typography } from "@mui/material";
-import { type FormEvent } from "react";
-import { toast } from 'react-toastify';
+import { Box, Paper, Typography } from "@mui/material";
+import { useEffect } from "react";
+
 
 import { useActivities } from "../../../lib/hooks/useActivities";
 import CommonButton from "../../../app/shared/components/common/CommonButton";
 import { useNavigate, useParams } from "react-router";
+import { useForm } from 'react-hook-form'
 
-
+import { zodResolver } from '@hookform/resolvers/zod'
+import TextInput from "../../../app/shared/components/TextInput";
+import SelectInput from "../../../app/shared/components/SelectInput";
+import { categoryOptions } from "./CategoryOptions";
+import DateTimeInput from "../../../app/shared/components/DateTimeInput";
+import LocationInput from "../../../app/shared/components/LocationInput";
+import { activitySchema, type ActivitySchema } from "../../../lib/schemas/activitySchema";
+import type { Activity } from "../../../lib/types";
 
 export default function ActivityForm() {
+    const { reset, control, handleSubmit } = useForm<ActivitySchema>({
+        mode: 'onTouched',
+        resolver: zodResolver(activitySchema)
+    });
     const { id } = useParams();
     const navigate = useNavigate();
-    const { updateActivity, createActivity, activity, isLoadingActivity } = useActivities(id);
+    const { activity, isLoadingActivity, updateActivity, createActivity } = useActivities(id);
+
+    useEffect(() => {
+        if (activity) reset({
+            ...activity,
+            location: {
+                city: activity.city,
+                venue: activity.venue,
+                longitude: activity.longitude,
+                latitude: activity.latitude
+            }
+        });
+    }, [activity, reset]);
+
     if (isLoadingActivity) return <Typography>Loading...</Typography>
 
     const scrollToTop = () => {
@@ -21,39 +46,33 @@ export default function ActivityForm() {
         });
     };
 
-    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
+    const onSubmit = (data: ActivitySchema) => {
 
-        const formData = new FormData(event.currentTarget);
-        const data: { [key: string]: FormDataEntryValue } = {};
-
-        formData.forEach((value, key) => {
-            data[key] = value;
-        });
-        scrollToTop();
+        const { location, ...rest } = data;
+        const flattenData = { ...rest, ...location };
         try {
             if (activity) {
-                data.id = activity.id;
-                await updateActivity.mutateAsync(data as unknown as Activity);
-                toast.success("Activity updated successfully!");
-                navigate('/activities/' + activity.id)
-            } else {
-                createActivity.mutateAsync(data as unknown as Activity, {
-                    onSuccess: (id) => {
-                        toast.success("Activity created successfully!");
-                        navigate('/activities/' + id)
-                    }
-                });
+                updateActivity.mutate({ ...activity, ...flattenData }, {
 
-
+                    onSuccess: () => navigate('/activities/' + activity.id)
+                }
+                );
             }
+            else {
+                createActivity.mutate({
+                    ...flattenData,
+                    isCancelled: false,
+                } as Activity, {
 
-
-
+                    onSuccess: (id) => navigate('/activities/' + id)
+                }
+                );
+            }
         } catch (error) {
-            toast.error("Something went wrong. Please try again.");
-            console.error(error);
+            console.log(error)
         }
+        scrollToTop();
+
     };
 
     return (
@@ -62,23 +81,22 @@ export default function ActivityForm() {
                 {activity ? 'Edit Activity' : 'Create Activity'}
             </Typography>
 
-            <Box component="form" onSubmit={handleSubmit} display="flex" flexDirection="column" gap={3}>
-                <TextField name="title" label="Title" defaultValue={activity?.title} required />
-                <TextField name="description" label="Description" multiline rows={3} required defaultValue={activity?.description} />
-                <TextField name="category" label="Category" defaultValue={activity?.category} required />
-                <TextField
-                    name="date"
-                    label="Date"
-                    type="date"
-                    defaultValue={
-                        activity?.date
-                            ? new Date(activity.date).toISOString().split('T')[0]
-                            : new Date().toISOString().split('T')[0]
-                    }
-                    required
-                />
-                <TextField name="city" label="City" defaultValue={activity?.city} required />
-                <TextField name="venue" label="Venue" defaultValue={activity?.venue} required />
+            <Box component="form" onSubmit={handleSubmit(onSubmit)} display="flex" flexDirection="column" gap={3}>
+                <TextInput label={'Title'} control={control} name='title' />
+                <TextInput label={'Dscription'} control={control} name='description' multiline rows={3} />
+                <Box display='flex' gap={3}>
+                    <SelectInput
+                        item={categoryOptions}
+                        label={'Category'}
+                        control={control}
+                        name='category'
+                    />
+                    <DateTimeInput label={'date'} name='date' control={control} />
+                </Box>
+                <LocationInput control={control} label='Enter the location' name="location" />
+
+
+
 
                 <Box display="flex" gap={2}>
                     <CommonButton label="Cancel" type="cancel" onClick={() => navigate('/activities')} />
@@ -86,7 +104,7 @@ export default function ActivityForm() {
                         label="Submit"
                         type="submit"
                         style={{ minWidth: 120 }}
-                        onClick={undefined} // handled by form
+
                     />
                 </Box>
             </Box>
